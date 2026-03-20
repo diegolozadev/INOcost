@@ -1,0 +1,109 @@
+{% block content %}
+<style>
+    :root {
+        --primary: #2c3e50;
+        --secondary: #3498db;
+        --success: #27ae60;
+        --bg: #f4f7f6;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg);
+        padding: 20px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+    }
+
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-primary { background: var(--secondary); color: white; }
+    .btn-primary:hover { background: #2980b9; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th {
+        text-align: left;
+        background-color: #f8f9fa;
+        color: var(--primary);
+        padding: 12px;
+        border-bottom: 2px solid #eee;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        color: #555;
+    }
+
+    .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        background: #e1f5fe;
+        color: #0288d1;
+    }
+</style>
+
+<div class="container">
+    <div class="header-actions">
+        <h2>Gestión de Tipos de Costo</h2>
+        <a href="#" class="btn btn-primary">+ Nuevo Registro</a>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cuenta</th>
+                    <th>Tipo</th>
+                    <th>Detalle</th>
+                    <th>Registrado por</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for costo in costos %}
+                <tr>
+                    <td><strong>{{ costo.cuenta_auxiliar }}</strong></td>
+                    <td><span class="badge">{{ costo.get_tipo_costo_display }}</span></td>
+                    <td>{{ costo.get_detalle_costo_display }}</td>
+                    <td>{{ costo.registrado_por.username|default:"Sistema" }}</td>
+                    <td>
+                        <a href="#" style="color: var(--secondary);">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center;">No hay registros disponibles.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
