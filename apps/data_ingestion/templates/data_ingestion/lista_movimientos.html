@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INOcost - Movimientos Contables</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #2c3e50;
+        }
+
+        /* Navbar Estilo Clean Corporate */
+        .navbar-custom {
+            background-color: #2c3e50;
+            padding: 0.8rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-weight: 700; color: #fff !important; }
+
+        /* Contenedor de la Tabla */
+        .dashboard-container { padding: 30px; }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .table-responsive {
+            max-height: 650px; 
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            z-index: 10;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover { background-color: #f1f7ff; }
+
+        /* Formato de Dinero */
+        .text-money {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 600;
+            text-align: right;
+        }
+        .text-debito { color: #27ae60; }
+        .text-credito { color: #e74c3c; }
+
+        /* Badges y Botones */
+        .badge-unit {
+            background: #e8f4fd;
+            color: #2b5a83;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .btn-custom {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-import { background: #3498db; color: white; }
+        .btn-danger-soft { background: #fff5f5; color: #e74c3c; border: 1px solid #ffcfcf; }
+
+        /* Paginación */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            gap: 8px;
+        }
+        .page-link-custom {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            color: #2c3e50;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .page-link-custom:hover { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">INOcost</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="stats-header">
+            <div>
+                <h2 style="margin: 0;">Movimientos Contables</h2>
+                <p class="text-muted mb-0">
+                    Total: <strong>{{ paginator.count|default:movimientos.count }}</strong> | 
+                    Página: <strong>{{ page_obj.number|default:"1" }}</strong>
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'cargar_movimientos' %}" class="btn-custom btn-import">↑ Importar Excel</a>
+                <a href="/admin/costos/detallemovimientoscontables/" class="btn-custom btn-danger-soft ms-2" onclick="return confirm('¿Ir al admin?')">⚙️ Gestionar</a>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Auxiliar</th>
+                            <th>Descripción</th>
+                            <th>Razón Social</th>
+                            <th>Unidad</th>
+                            <th>Débito</th>
+                            <th>Crédito</th>
+                            <th>Neto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in movimientos %}
+                        <tr>
+                            <td>{{ item.fecha|date:"d/m/Y" }}</td>
+                            <td><code>{{ item.auxiliar }}</code></td>
+                            <td>{{ item.desc_auxiliar|truncatechars:25 }}</td>
+                            <td>{{ item.razon_social|title|truncatechars:30 }}</td>
+                            <td><span class="badge-unit">{{ item.unidad_negocio_codigo }}</span></td>
+                            <td class="text-money text-debito">${{ item.debito }}</td>
+                            <td class="text-money text-credito">${{ item.credito }}</td>
+                            <td class="text-money"><strong>${{ item.neto }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">No hay datos cargados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <div class="pagination-container">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1" class="page-link-custom">&laquo; Inicio</a>
+                    <a href="?page={{ page_obj.previous_page_number }}" class="page-link-custom">Anterior</a>
+                {% endif %}
+                
+                <span class="pt-1 mx-2">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="page-link-custom">Siguiente</a>
+                    <a href="?page={{ paginator.num_pages }}" class="page-link-custom">Final &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>

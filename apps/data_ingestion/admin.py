@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoCosto
+from .models import TipoCosto, DetalleMovimientosContables
 
 @admin.register(TipoCosto)
 class TipoCostoAdmin(admin.ModelAdmin):
@@ -36,3 +36,27 @@ class TipoCostoAdmin(admin.ModelAdmin):
         if not obj.registrado_por:
             obj.registrado_por = request.user
         super().save_model(request, obj, form, change)
+
+
+# --- REGISTRO DE MOVIMIENTOS CONTABLES  ---
+@admin.register(DetalleMovimientosContables)
+class DetalleMovimientosAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'auxiliar', 'razon_social', 'debito', 'credito', 'neto', 'unidad_negocio_codigo')
+    list_filter = ('fecha', 'desc_unidad_negocio')
+    
+    # Esto asegura que Django siempre intente contar todo
+    show_full_result_count = True 
+    list_per_page = 100
+
+    def changelist_view(self, request, extra_context=None):
+        # 1. Obtenemos el total de la base de datos
+        total = DetalleMovimientosContables.objects.count()
+        
+        # 2. Inyectamos el número en el título de la página
+        extra_context = extra_context or {}
+        extra_context['title'] = f"Movimientos Cargados: {total} registros"
+        
+        return super().changelist_view(request, extra_context=extra_context)
+
+    # Hacer que los montos sean de solo lectura si prefieres que no se editen manualmente
+    # readonly_fields = ('neto',)
