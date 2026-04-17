@@ -1,28 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Datos - INOcost{% endblock %}
+
+{% block view_name %}Carga de Información{% endblock %}
 
 {% block content %}
-<div style="max-width: 600px; margin: 40px auto; font-family: sans-serif;">
-    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-        <h2 style="color: #2c3e50; text-align: center;">Importar Datos Contables</h2>
-        <hr>
-        <p style="color: #666; font-size: 0.9em;">
-            <strong>Nota:</strong> El archivo debe contener las columnas: 
-            <i>clase, fecha, auxiliar, debito, credito, etc.</i>
-        </p>
+<div class="max-w-2xl mx-auto mt-10">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         
-        <form method="post" enctype="multipart/form-data" style="margin-top: 20px;">
-            {% csrf_token %}
-            <div style="margin-bottom: 20px;">
-                {{ form.archivo.label_tag }}
-                <div style="margin-top: 10px;">{{ form.archivo }}</div>
+        <div class="bg-slate-800 px-8 py-6">
+            <h2 class="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-3">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-4-4H3m11 2v2a4 4 0 004 4h2m-6-4h4V7a4 4 0 00-4-4H9a4 4 0 00-4 4v7h4z" />
+                </svg>
+                Importar Movimientos Contables
+            </h2>
+            <p class="text-slate-400 text-xs mt-2 uppercase tracking-tight">Carga de archivos maestros para auditoría</p>
+        </div>
+
+        <div class="p-8">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700 font-medium">Requisitos del archivo:</p>
+                        <p class="text-xs text-blue-600 mt-1 leading-relaxed">
+                            Asegúrese de que el Excel contenga las columnas obligatorias: 
+                            <span class="font-bold">clase, fecha, auxiliar, debito, credito y unidad de negocio.</span>
+                        </p>
+                    </div>
+                </div>
             </div>
-            
-            <button type="submit" style="width: 100%; background: #3498db; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                Subir y Procesar Archivo
-            </button>
-        </form>
-        
-        <div style="margin-top: 15px; text-align: center;">
-            <a href="#" style="color: #95a5a6; text-decoration: none; font-size: 0.9em;">Volver a la lista</a>
+
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="space-y-2">
+                    <label for="{{ form.archivo.id_for_label }}" class="block text-sm font-bold text-slate-700 uppercase tracking-tighter">
+                        Seleccionar Archivo Excel/CSV
+                    </label>
+                    
+                    <div class="relative group">
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-xl group-hover:border-blue-400 transition-colors duration-200">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-slate-400 group-hover:text-blue-500 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-slate-600">
+                                    <span class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        {{ form.archivo }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 italic">Formatos permitidos: .xlsx, .xls, .csv</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% if form.archivo.errors %}
+                        <p class="mt-2 text-sm text-rose-600 font-semibold">{{ form.archivo.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold uppercase tracking-widest shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex justify-center items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                        Subir y Procesar Archivo
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-8 text-center border-t border-slate-100 pt-6">
+                <a href="{% url 'lista_movimientos' %}" class="text-slate-400 hover:text-slate-600 text-sm font-semibold transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    Volver a la lista de movimientos
+                </a>
+            </div>
         </div>
     </div>
 </div>

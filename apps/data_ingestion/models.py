@@ -5,14 +5,14 @@ from django.conf import settings
 
 class TipoCosto(models.Model):
     
-    TIPO_COSTOS = [
-        ("INGRESO", "INGRESO"),
-        ("GASTO", "GASTO"),
-        ("COSTO_VENTA", "COSTO VENTA"),
-        ("INSUMOS", "INSUMOS"),
-        ("MANO_OBRA", "MANO OBRA"),
-        ("CIF", "CIF"),
-    ]
+    # TIPO_COSTOS = [
+    #     ("INGRESO", "INGRESO"),
+    #     ("GASTO", "GASTO"),
+    #     ("COSTO_VENTA", "COSTO VENTA"),
+    #     ("INSUMOS", "INSUMOS"),
+    #     ("MANO_OBRA", "MANO OBRA"),
+    #     ("CIF", "CIF"),
+    # ]
     
     CHOICES_CONTABLES = (
             ('INGRESO', 'INGRESO'),
@@ -39,7 +39,8 @@ class TipoCosto(models.Model):
             ('CIF_COPAGOS', 'CIF COPAGOS ASUMIDOS'),
             ('CIF_ASEO_CAFE', 'OTROS CIF ELEMENTOS DE ASEO Y CAFETERIA'),
             ('CIF_PAPELERIA', 'OTROS CIF UTILES, PAPELERIA Y FOTOCOPIAS'),
-            ('CIF_TRANSPORTE_EQUIPO_MEDICO', 'CIF TRANSPORTE EQUIPO MÉDICO')
+            ('CIF_TRANSPORTE_EQUIPO_MEDICO', 'CIF TRANSPORTE EQUIPO MÉDICO'),
+            ('CELULARES', 'CELULARES'),
         )
     
     # Relación con el modelo User
@@ -51,19 +52,35 @@ class TipoCosto(models.Model):
     )
     
     cuenta_auxiliar = models.CharField(max_length=8)
-    tipo_costo = models.CharField(max_length=20, choices=TIPO_COSTOS)
+    tipo_costo = models.CharField(max_length=20)
     detalle_costo = models.CharField(max_length=50, choices=CHOICES_CONTABLES)
+    
+    
+    def nombre_detalle(self):
+        return self.get_detalle_costo_display()
     
 class DetalleMovimientosContables(models.Model):
     clase = models.CharField(max_length=100)
     fecha = models.DateField()
     auxiliar = models.CharField(max_length=8)
     desc_auxiliar = models.CharField(max_length=100)
+    
+    # NUEVA RELACIÓN:
+    # Vincula el movimiento con su clasificación de costo basada en el auxiliar
+    mapeo_costo = models.ForeignKey(
+        TipoCosto, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='movimientos'
+    )
+    
+    
     c_o_mvto = models.CharField(max_length=100, verbose_name="C.O. Movimiento")
     desc_c_o_mvto = models.CharField(max_length=100, verbose_name="Descripción C.O.")
     unidad_negocio_codigo = models.CharField(max_length=4)
-    desc_unidad_negocio = models.CharField(max_length=100)
     docto_proveedor = models.CharField(max_length=100)
+    desc_unidad_negocio = models.CharField(max_length=100)
     tercero_mvto = models.CharField(max_length=100)
     razon_social = models.CharField(max_length=100)
     

@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Iniciar Sesión | INOcost</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="icon" type="img/png" href="{% static 'img/costos.png' %}"/>
+    
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "tertiary-fixed-dim": "#b8c8da",
+                "inverse-on-surface": "#eff1f3",
+                "on-primary-fixed": "#00174a",
+                "primary-fixed": "#dbe1ff",
+                "outline": "#757682",
+                "inverse-primary": "#b3c5ff",
+                "secondary-container": "#446ce4",
+                "surface-bright": "#f7f9fb",
+                "tertiary-fixed": "#d4e4f6",
+                "on-primary-container": "#758dd5",
+                "surface-container-lowest": "#ffffff",
+                "primary-container": "#002366",
+                "background": "#f7f9fb",
+                "secondary": "#2552ca",
+                "on-secondary": "#ffffff",
+                "surface-container-low": "#f2f4f6",
+                "error-container": "#ffdad6",
+                "tertiary-container": "#1a2a37",
+                "tertiary": "#051522",
+                "surface": "#f7f9fb",
+                "on-tertiary-fixed-variant": "#394857",
+                "on-tertiary-fixed": "#0d1d2a",
+                "on-secondary-fixed-variant": "#003baf",
+                "secondary-fixed": "#dce1ff",
+                "surface-variant": "#e0e3e5",
+                "secondary-fixed-dim": "#b6c4ff",
+                "surface-container-highest": "#e0e3e5",
+                "on-error-container": "#93000a",
+                "outline-variant": "#c5c6d2",
+                "on-error": "#ffffff",
+                "on-background": "#191c1e",
+                "surface-tint": "#435b9f",
+                "on-secondary-container": "#fffbff",
+                "on-primary-fixed-variant": "#2a4386",
+                "on-surface": "#191c1e",
+                "inverse-surface": "#2d3133",
+                "on-tertiary": "#ffffff",
+                "surface-container-high": "#e6e8ea",
+                "on-secondary-fixed": "#00164e",
+                "primary": "#00113a",
+                "primary-fixed-dim": "#b3c5ff",
+                "surface-container": "#eceef0",
+                "surface-dim": "#d8dadc",
+                "on-surface-variant": "#444650",
+                "error": "#ba1a1a",
+                "on-tertiary-container": "#8191a2",
+                "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                "DEFAULT": "1rem",
+                "lg": "2rem",
+                "xl": "3rem",
+                "full": "9999px"
+            },
+            "fontFamily": {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #00113a 0%, #2552ca 100%);
+        }
+        .ambient-lift {
+            box-shadow: 0px 20px 40px rgba(0, 17, 58, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col relative overflow-hidden">
+
+<div class="absolute inset-0 z-0 pointer-events-none">
+    <div class="absolute -top-[10%] -right-[10%] w-[60vw] h-[60vw] signature-gradient rounded-full opacity-5 blur-[120px]"></div>
+    <div class="absolute -bottom-[20%] -left-[10%] w-[50vw] h-[50vw] bg-secondary-container rounded-full opacity-5 blur-[100px]"></div>
+</div>
+
+<main class="flex-grow flex items-center justify-center p-6 z-10">
+    <div class="w-full max-w-[480px]">
+        
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-3 mb-2">
+                <div class="w-12 h-12 rounded-xl signature-gradient flex items-center justify-center text-white shadow-lg">
+                    <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+                </div>
+                <span class="font-headline text-4xl font-extrabold tracking-tighter text-primary">INOcost</span>
+            </div>
+            <p class="font-headline text-on-surface-variant font-medium tracking-wide">Sistema de Gestión Contable</p>
+        </div>
+
+        <div class="glass-effect rounded-xl ambient-lift p-10 border border-outline-variant/15">
+            <div class="mb-8">
+                <h1 class="font-headline text-2xl font-bold text-primary mb-2">Iniciar Sesión</h1>
+                <p class="text-on-surface-variant text-sm italic">Acceda a su terminal financiero institucional.</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="mb-6 p-4 rounded-lg bg-error-container text-on-error-container text-xs flex items-center gap-3 animate-pulse">
+                <span class="material-symbols-outlined text-sm">error</span>
+                <span>Usuario o contraseña incorrectos. Por favor, intente de nuevo.</span>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-outline tracking-wider uppercase ml-1">Usuario</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-secondary transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">person</span>
+                        </div>
+                        <input name="username" required autofocus
+                            class="w-full pl-11 pr-4 py-4 bg-surface-container-high border-none rounded-lg focus:ring-1 focus:ring-secondary/30 focus:bg-surface-container-lowest transition-all text-sm placeholder:text-outline/50" 
+                            placeholder="Ingrese su usuario" type="text"/>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center px-1">
+                        <label class="block text-xs font-semibold text-outline tracking-wider uppercase">Contraseña</label>
+                        <a class="text-xs font-medium text-secondary hover:text-primary transition-colors" href="#">¿Olvidó su contraseña?</a>
+                    </div>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-secondary transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">lock</span>
+                        </div>
+                        <input name="password" required
+                            class="w-full pl-11 pr-12 py-4 bg-surface-container-high border-none rounded-lg focus:ring-1 focus:ring-secondary/30 focus:bg-surface-container-lowest transition-all text-sm placeholder:text-outline/50" 
+                            placeholder="••••••••" type="password"/>
+                    </div>
+                </div>
+
+                <button class="w-full py-4 rounded-full signature-gradient text-on-primary font-headline font-bold text-lg ambient-lift hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 mt-4 flex items-center justify-center gap-2" type="submit">
+                    <span>Ingresar</span>
+                    <span class="material-symbols-outlined text-xl">arrow_forward</span>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-8 border-t border-outline-variant/10 text-center">
+                <p class="text-xs text-on-surface-variant">¿No tiene acceso? <a class="text-secondary font-bold hover:underline" href="#">Contacte a Soporte Técnico</a></p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="w-full py-8 px-12 z-10">
+    <div class="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <p class="font-label text-[10px] tracking-widest uppercase text-outline">© 2026 INOcost Software. Todos los derechos reservados.</p>
+        <div class="flex items-center gap-8 text-outline">
+            <a href="#" class="text-xs font-medium hover:text-secondary transition-colors">Política de Privacidad</a>
+            <a href="#" class="text-xs font-medium hover:text-secondary transition-colors">Términos de Servicio</a>
+            <a href="#" class="text-xs font-medium hover:text-secondary transition-colors">Contacto</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

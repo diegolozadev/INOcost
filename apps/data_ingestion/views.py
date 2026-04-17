@@ -1,22 +1,19 @@
-from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import TipoCosto, DetalleMovimientosContables
+import pandas as pd
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.views.generic import ListView
+from .models import TipoCosto, DetalleMovimientosContables
 from .forms import ImportarMovimientosForm
-import pandas as pd
 
-
-# 1. LISTAR TODOS LOS COSTOS
+# 1. LISTAR TIPO DE COSTOS
 class TipoCostoListView(ListView):
     model = TipoCosto
     template_name = 'costos/tipocosto_list.html'
     context_object_name = 'costos'
-    # Ordenamos por fecha de creación o ID (puedes agregar un campo 'creado_en' a tu modelo)
     ordering = ['-id']
-    
-# VISTA para cargar excel de movimiento contables de siesa
+
+# 2. VISTA DE IMPORTACIÓN (SIESA)
 def importar_movimientos_view(request):
     if request.method == 'POST':
         form = ImportarMovimientosForm(request.POST, request.FILES)
@@ -30,75 +27,84 @@ def importar_movimientos_view(request):
                 else:
                     df = pd.read_excel(archivo)
 
-                # 2. NORMALIZACIÓN: Convertir encabezados a minúsculas y quitar espacios
-                # Esto evita errores si el Excel dice "FECHA" en vez de "fecha"
+                # 2. NORMALIZACIÓN DE ENCABEZADOS
                 df.columns = [str(c).strip().lower() for c in df.columns]
 
-                # 3. LIMPIEZA DE DATOS
-                # Convertir fechas de Excel a formato Python date
+                # 3. LIMPIEZA DE DATOS FINANCIEROS Y FECHAS
                 if 'fecha' in df.columns:
                     df['fecha'] = pd.to_datetime(df['fecha'], errors='coerce').dt.date
                 
-                # Rellenar nulos y asegurar tipos numéricos
+                # Asegurar que las columnas existan antes de operar
                 df['debito'] = pd.to_numeric(df.get('debito', 0), errors='coerce').fillna(0)
                 df['credito'] = pd.to_numeric(df.get('credito', 0), errors='coerce').fillna(0)
                 df['neto'] = df['debito'] - df['credito']
-
-                # Eliminar filas donde la fecha sea nula (filas vacías al final del Excel)
+                
+                # Quitar filas sin fecha (evita errores en bulk_create)
                 df = df.dropna(subset=['fecha'])
 
+                # --- LÓGICA DE MAPEO (OPTIMIZADA) ---
+                # Traemos el catálogo de TipoCosto a memoria
+                dict_mapeo = {str(tc.cuenta_auxiliar).strip(): tc for tc in TipoCosto.objects.all()}
+                
                 movimientos_a_crear = []
                 
-                for index, row in df.iterrows():
-                    # Usamos .get() para evitar KeyError si falta una columna opcional
+                for _, row in df.iterrows():
+                    # Limpiamos el auxiliar del Excel para que coincida con la DB
+                    auxiliar_excel = str(row.get('auxiliar', '')).strip()[:8]
+                    
+                    # Buscamos la relación
+                    costo_relacionado = dict_mapeo.get(auxiliar_excel)
+
                     obj = DetalleMovimientosContables(
-                        clase=str(row.get('clase', '')),
+                        clase=str(row.get('clase', '')).strip(),
                         fecha=row['fecha'],
-                        auxiliar=str(row.get('auxiliar', ''))[:8], # Truncar a max_length
-                        desc_auxiliar=str(row.get('desc_auxiliar', '')),
-                        c_o_mvto=str(row.get('c_o_mvto', '')),
-                        desc_c_o_mvto=str(row.get('desc_c_o_mvto', '')),
-                        unidad_negocio_codigo=str(row.get('unidad_negocio_codigo', ''))[:4],
-                        desc_unidad_negocio=str(row.get('desc_unidad_negocio', '')),
-                        docto_proveedor=str(row.get('docto_proveedor', '')),
-                        tercero_mvto=str(row.get('tercero_mvto', '')),
-                        razon_social=str(row.get('razon_social', '')),
+                        auxiliar=auxiliar_excel,
+                        desc_auxiliar=str(row.get('desc_auxiliar', '')).strip(),
+                        c_o_mvto=str(row.get('c_o_mvto', '')).strip(),
+                        desc_c_o_mvto=str(row.get('desc_c_o_mvto', '')).strip(),
+                        unidad_negocio_codigo=str(row.get('unidad_negocio_codigo', '')).strip()[:4],
+                        docto_proveedor=str(row.get('docto_proveedor', '')).strip(),
+                        desc_unidad_negocio=str(row.get('desc_unidad_negocio', '')).strip(),
+                        tercero_mvto=str(row.get('tercero_mvto', '')).strip(),
+                        razon_social=str(row.get('razon_social', '')).strip(),
                         debito=row['debito'],
                         credito=row['credito'],
                         neto=row['neto'],
-                        tipo_doc_contable=str(row.get('tipo_doc_contable', '')),
-                        grupo_contable=str(row.get('grupo_contable', '')), # Corregido typo 'groupo'
+                        tipo_doc_contable=str(row.get('tipo_doc_contable', '')).strip(),
+                        grupo_contable=str(row.get('grupo_contable', '')).strip(),
+                        mapeo_costo=costo_relacionado
                     )
                     movimientos_a_crear.append(obj)
 
                 # 4. GUARDADO MASIVO
                 if movimientos_a_crear:
-                    DetalleMovimientosContables.objects.bulk_create(movimientos_a_crear)
-                    messages.success(request, f"¡Éxito! Se importaron {len(movimientos_a_crear)} registros.")
+                    DetalleMovimientosContables.objects.bulk_create(movimientos_a_crear, batch_size=1000)
+                    messages.success(request, f"Se importaron {len(movimientos_a_crear)} movimientos exitosamente.")
                 else:
-                    messages.warning(request, "No se encontraron datos válidos para importar.")
+                    messages.warning(request, "El archivo no contenía datos válidos.")
                 
-                return redirect('data_ingestion/lista_movimientos.html')
+                return redirect('lista_movimientos')
 
             except Exception as e:
-                messages.error(request, f"Error crítico al procesar el archivo: {e}")
-                # Imprimir el error en consola para debug
-                print(f"DEBUG ERROR: {e}")
+                messages.error(request, f"Error al procesar el Excel: {e}")
     else:
         form = ImportarMovimientosForm()
     
-    # Asegúrate de que el path del template sea el correcto en tu estructura de carpetas
     return render(request, 'data_ingestion/importar_movimientos.html', {'form': form})
 
+# 3. LISTADO DE MOVIMIENTOS (AUDITORÍA)
+def lista_movimientos_view(request):
+    # select_related('mapeo_costo') es lo que permite que el template 
+    # vea la descripción del TipoCosto sin fallar
+    queryset = DetalleMovimientosContables.objects.select_related('mapeo_costo').all().order_by('-fecha', 'auxiliar')
+    
+    paginator = Paginator(queryset, 100)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-class MovimientosListView(LoginRequiredMixin, ListView):
-    model = DetalleMovimientosContables
-    template_name = 'data_ingestion/lista_movimientos.html'
-    context_object_name = 'movimientos'
-    # Definimos cuántos registros ver por página (ej. 100 es ideal para contabilidad)
-    paginate_by = 200
-    ordering = ['-fecha', '-id']
-
-    def get_queryset(self):
-        # Aquí puedes optimizar la consulta para que no traiga campos innecesarios si la tabla es gigante
-        return super().get_queryset().select_related()
+    return render(request, 'data_ingestion/lista_movimientos.html', {
+        'movimientos': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'is_paginated': page_obj.has_other_pages(),
+    })

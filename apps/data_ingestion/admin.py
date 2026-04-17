@@ -1,62 +1,84 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from import_export import resources, fields
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
 from .models import TipoCosto, DetalleMovimientosContables
 
+User = get_user_model()
+
+# --- RECURSO PARA TIPO DE COSTO ---
+class TipoCostoResource(resources.ModelResource):
+    registrado_por = fields.Field(
+        column_name='registrado_por',
+        attribute='registrado_por',
+        widget=ForeignKeyWidget(User, 'username')
+    )
+
+    class Meta:
+        model = TipoCosto
+        fields = ('id', 'cuenta_auxiliar', 'tipo_costo', 'detalle_costo', 'registrado_por')
+        import_id_fields = ['cuenta_auxiliar']
+
 @admin.register(TipoCosto)
-class TipoCostoAdmin(admin.ModelAdmin):
-    # Columnas que se verán en la tabla principal
-    list_display = (
-        'cuenta_auxiliar', 
-        'tipo_costo', 
-        'detalle_costo', 
-        'registrado_por',
-    )
-    
-    # Filtros laterales (muy útiles para auditoría clínica)
+class TipoCostoAdmin(ImportExportModelAdmin):
+    resource_class = TipoCostoResource
+    # Usamos get_detalle_costo_display para que en la lista del admin se vea el texto amigable
+    list_display = ('cuenta_auxiliar', 'tipo_costo', 'mostrar_detalle', 'registrado_por')
     list_filter = ('tipo_costo', 'registrado_por')
-    
-    # Buscador por cuenta o detalle
     search_fields = ('cuenta_auxiliar', 'detalle_costo')
-    
-    # Organización de campos dentro del formulario de edición
-    fieldsets = (
-        ('Información Contable', {
-            'fields': ('cuenta_auxiliar', 'tipo_costo', 'detalle_costo')
-        }),
-        ('Auditoría', {
-            'fields': ('registrado_por',),
-            'classes': ('collapse',), # Esto lo oculta por defecto
-        }),
-    )
 
-    def save_model(self, request, obj, form, change):
-        """
-        Al igual que en la vista, si creamos el registro desde el admin,
-        asignamos automáticamente al usuario logueado.
-        """
-        if not obj.registrado_por:
-            obj.registrado_por = request.user
-        super().save_model(request, obj, form, change)
+    def mostrar_detalle(self, obj):
+        return obj.get_detalle_costo_display()
+    mostrar_detalle.short_description = 'Detalle de Costo'
 
 
-# --- REGISTRO DE MOVIMIENTOS CONTABLES  ---
+# --- RECURSO PARA MOVIMIENTOS CONTABLES ---
+class DetalleMovimientosResource(resources.ModelResource):
+    class Meta:
+        model = DetalleMovimientosContables
+        fields = (
+            'clase', 'fecha', 'auxiliar', 'desc_auxiliar', 
+            'c_o_mvto', 'desc_c_o_mvto', 'unidad_negocio_codigo', 
+            'desc_unidad_negocio', 'docto_proveedor', 'tercero_mvto', 
+            'razon_social', 'debito', 'credito', 'neto'
+        )
+
 @admin.register(DetalleMovimientosContables)
-class DetalleMovimientosAdmin(admin.ModelAdmin):
-    list_display = ('fecha', 'auxiliar', 'razon_social', 'debito', 'credito', 'neto', 'unidad_negocio_codigo')
-    list_filter = ('fecha', 'desc_unidad_negocio')
-    
-    # Esto asegura que Django siempre intente contar todo
-    show_full_result_count = True 
+class DetalleMovimientosAdmin(ImportExportModelAdmin):
+    resource_class = DetalleMovimientosResource
+    # Agregamos los métodos personalizados a la lista
+    list_display = (
+        'fecha', 
+        'auxiliar', 
+        'razon_social', 
+        'get_tipo_costo',    # Columna nueva
+        'get_detalle_costo', # Columna nueva
+        'neto'
+    )
+    list_filter = ('fecha', 'mapeo_costo__tipo_costo') # Filtro por el tipo de costo relacionado
+    search_fields = ('auxiliar', 'razon_social')
+    list_select_related = ('mapeo_costo',) # INDISPENSABLE para velocidad
     list_per_page = 100
 
-    def changelist_view(self, request, extra_context=None):
-        # 1. Obtenemos el total de la base de datos
-        total = DetalleMovimientosContables.objects.count()
-        
-        # 2. Inyectamos el número en el título de la página
-        extra_context = extra_context or {}
-        extra_context['title'] = f"Movimientos Cargados: {total} registros"
-        
-        return super().changelist_view(request, extra_context=extra_context)
+    # --- MÉTODOS PARA MOSTRAR LA RELACIÓN ---
+    
+    def get_tipo_costo(self, obj):
+        if obj.mapeo_costo:
+            return obj.mapeo_costo.tipo_costo
+        return "-"
+    get_tipo_costo.short_description = 'Tipo'
+    get_tipo_costo.admin_order_field = 'mapeo_costo__tipo_costo'
 
-    # Hacer que los montos sean de solo lectura si prefieres que no se editen manualmente
-    # readonly_fields = ('neto',)
+    def get_detalle_costo(self, obj):
+        if obj.mapeo_costo:
+            # Aquí es donde ocurre la magia del "display"
+            return obj.mapeo_costo.get_detalle_costo_display()
+        return "Pendiente"
+    get_detalle_costo.short_description = 'Detalle Costo'
+
+    def changelist_view(self, request, extra_context=None):
+        total = DetalleMovimientosContables.objects.count()
+        extra_context = extra_context or {}
+        extra_context['title'] = f"Auditoría: {total} registros cargados"
+        return super().changelist_view(request, extra_context=extra_context)
