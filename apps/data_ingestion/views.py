@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from django.views.generic import ListView
 from .models import TipoCosto, DetalleMovimientosContables
 from .forms import ImportarMovimientosForm
+from django.db.models import Sum
 
 # 1. LISTAR TIPO DE COSTOS
 class TipoCostoListView(ListView):
@@ -108,3 +109,4 @@ def lista_movimientos_view(request):
         'paginator': paginator,
         'is_paginated': page_obj.has_other_pages(),
     })
+    
